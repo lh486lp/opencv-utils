@@ -1,22 +1,23 @@
-package com.ruhr.controller;
+package com.ruhr.match;
 
-import jdk.nashorn.internal.objects.annotations.Getter;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.opencv.calib3d.Calib3d;
 import org.opencv.core.*;
 import org.opencv.features2d.*;
+import org.opencv.highgui.HighGui;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.xfeatures2d.SURF;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.logging.Logger;
 
 /**
  * Created by niwei on 2017/4/28.
  */
-public class ImageRecognition {
-    private static final Logger logger = Logger.getGlobal();
+@Slf4j
+public class SURFMatch {
     private static final int MIN_COUNT = 4;
 
     /**
@@ -24,23 +25,8 @@ public class ImageRecognition {
      */
     private float nndrRatio = 0.7f;
 
+    @Getter
     private int matchesPointCount = 0;
-
-    public float getNndrRatio() {
-        return nndrRatio;
-    }
-
-    public void setNndrRatio(float nndrRatio) {
-        this.nndrRatio = nndrRatio;
-    }
-
-    public int getMatchesPointCount() {
-        return matchesPointCount;
-    }
-
-    public void setMatchesPointCount(int matchesPointCount) {
-        this.matchesPointCount = matchesPointCount;
-    }
 
     public void matchImage(Mat templateImage, Mat originalImage) {
         MatOfKeyPoint templateKeyPoints = new MatOfKeyPoint();
@@ -51,31 +37,31 @@ public class ImageRecognition {
         //提取模板图的特征点
         MatOfKeyPoint templateDescriptors = new MatOfKeyPoint();
         SURF descriptorExtractor = SURF.create();
-        logger.info("提取模板图的特征点");
+        log.info("提取模板图的特征点");
         descriptorExtractor.compute(templateImage, templateKeyPoints, templateDescriptors);
 
         //显示模板图的特征点图片
         Mat outputImage = new Mat(templateImage.rows(), templateImage.cols(), Imgcodecs.IMREAD_COLOR);
-        logger.info("在图片上显示提取的特征点");
+        log.info("在图片上显示提取的特征点");
         Features2d.drawKeypoints(templateImage, templateKeyPoints, outputImage, new Scalar(255, 0, 0), 0);
 
         //获取原图的特征点
         MatOfKeyPoint originalKeyPoints = new MatOfKeyPoint();
         MatOfKeyPoint originalDescriptors = new MatOfKeyPoint();
         featureDetector.detect(originalImage, originalKeyPoints);
-        logger.info("提取原图的特征点");
+        log.info("提取原图的特征点");
         descriptorExtractor.compute(originalImage, originalKeyPoints, originalDescriptors);
 
         List<MatOfDMatch> matches = new LinkedList();
         DescriptorMatcher descriptorMatcher = DescriptorMatcher.create(DescriptorMatcher.FLANNBASED);
-        logger.info("寻找最佳匹配");
+        log.info("寻找最佳匹配");
         /*
          * knnMatch方法的作用就是在给定特征描述集合中寻找最佳匹配
          * 使用KNN-matching算法，令K=2，则每个match得到两个最接近的descriptor，然后计算最接近距离和次接近距离之间的比值，当比值大于既定值时，才作为最终match。
          */
         descriptorMatcher.knnMatch(templateDescriptors, originalDescriptors, matches, 2);
 
-        logger.info("计算匹配结果");
+        log.info("计算匹配结果");
         LinkedList<DMatch> goodMatchesList = new LinkedList();
 
         //对匹配结果进行筛选，依据distance进行筛选
@@ -92,7 +78,7 @@ public class ImageRecognition {
         matchesPointCount = goodMatchesList.size();
         //当匹配后的特征点大于等于 4 个，则认为模板图在原图中，该值可以自行调整
         if (matchesPointCount >= MIN_COUNT) {
-            logger.info("模板图在原图匹配成功！");
+            log.info("模板图在原图匹配成功！");
 
             List<KeyPoint> templateKeyPointList = templateKeyPoints.toList();
             List<KeyPoint> originalKeyPointList = originalKeyPoints.toList();
@@ -131,7 +117,7 @@ public class ImageRecognition {
             int colStart = (int) pointd[0];
             int colEnd = (int) pointb[0];
             Mat subMat = originalImage.submat(rowStart, rowEnd, colStart, colEnd);
-            Imgcodecs.imwrite("target/原图中的匹配图.jpg", subMat);
+            Imgcodecs.imwrite("src/main/resources/surf/原图中的匹配图.jpg", subMat);
 
             //将匹配的图像用用四条线框出来
             // 上 A->B
@@ -148,27 +134,32 @@ public class ImageRecognition {
             Mat matchOutput = new Mat(originalImage.rows() * 2, originalImage.cols() * 2, Imgcodecs.IMREAD_COLOR);
             Features2d.drawMatches(templateImage, templateKeyPoints, originalImage, originalKeyPoints, goodMatches, matchOutput, new Scalar(0, 255, 0), new Scalar(255, 0, 0), new MatOfByte(), 2);
 
-            Imgcodecs.imwrite("target/特征点匹配过程.jpg", matchOutput);
-            Imgcodecs.imwrite("target/模板图在原图中的位置.jpg", originalImage);
+            Imgcodecs.imwrite("src/main/resources/surf/特征点匹配过程.jpg", matchOutput);
+            Imgcodecs.imwrite("src/main/resources/surf/模板图在原图中的位置.jpg", originalImage);
         } else {
-            logger.info("模板图不在原图中！");
+            log.info("模板图不在原图中！");
         }
 
-        Imgcodecs.imwrite("target/模板特征点.jpg", outputImage);
+        Imgcodecs.imwrite("src/main/resources/surf/模板特征点.jpg", outputImage);
+
+        HighGui.imshow("result", outputImage);
+        HighGui.waitKey();
+
+        System.exit(0);
     }
 
     public static void main(String[] args) {
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 
-        String templateFilePath = "target/pieces.jpeg";
-        String originalFilePath = "target/go.jpeg";
+        String templateFilePath = "src/main/resources/pieces.jpeg";
+        String originalFilePath = "src/main/resources/go.jpeg";
         //读取图片文件
         Mat templateImage = Imgcodecs.imread(templateFilePath, Imgcodecs.IMREAD_COLOR);
         Mat originalImage = Imgcodecs.imread(originalFilePath, Imgcodecs.IMREAD_COLOR);
 
-        ImageRecognition imageRecognition = new ImageRecognition();
-        imageRecognition.matchImage(templateImage, originalImage);
+        SURFMatch match = new SURFMatch();
+        match.matchImage(templateImage, originalImage);
 
-        logger.info("匹配的像素点总数：" + imageRecognition.getMatchesPointCount());
+        log.info("匹配的像素点总数：" + match.getMatchesPointCount());
     }
 }

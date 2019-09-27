@@ -1,4 +1,4 @@
-package com.ruhr.controller;
+package com.ruhr.match;
 
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -11,7 +11,7 @@ import java.io.File;
  * @author luhui
  * @since 2019-09-26 14:51
  */
-public class test {
+public class ReadAndWrite {
 
     public static void main(String[] args) {
         // 这个必须要写,不写报java.lang.UnsatisfiedLinkError

@@ -1,4 +1,4 @@
-package com.ruhr.controller;
+package com.ruhr.match;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,9 +28,9 @@ import org.xml.sax.SAXException;
 class AKAZEMatch {
     public void run(String[] args) {
         //! [load]
-        String filename1 = args.length > 2 ? args[0] : "target/pieces.jpeg";
-        String filename2 = args.length > 2 ? args[1] : "target/go.jpeg";
-        String filename3 = args.length > 2 ? args[2] : "target/H1to3p.xml";
+        String filename1 = args.length > 2 ? args[0] : "src/main/resources/go.jpeg";
+        String filename2 = args.length > 2 ? args[1] : "src/main/resources/go.jpeg";
+        String filename3 = args.length > 2 ? args[2] : "src/main/resources/H1to3p.xml";
         Mat img1 = Imgcodecs.imread(filename1, Imgcodecs.IMREAD_GRAYSCALE);
         Mat img2 = Imgcodecs.imread(filename2, Imgcodecs.IMREAD_GRAYSCALE);
         if (img1.empty() || img2.empty()) {
@@ -56,13 +56,7 @@ class AKAZEMatch {
                     idx++;
                 }
             }
-        } catch (ParserConfigurationException e) {
-            e.printStackTrace();
-            System.exit(0);
-        } catch (SAXException e) {
-            e.printStackTrace();
-            System.exit(0);
-        } catch (IOException e) {
+        } catch (ParserConfigurationException | SAXException | IOException e) {
             e.printStackTrace();
             System.exit(0);
         }
@@ -136,7 +130,7 @@ class AKAZEMatch {
         MatOfKeyPoint inliers2 = new MatOfKeyPoint(listOfInliers2.toArray(new KeyPoint[listOfInliers2.size()]));
         MatOfDMatch goodMatches = new MatOfDMatch(listOfGoodMatches.toArray(new DMatch[listOfGoodMatches.size()]));
         Features2d.drawMatches(img1, inliers1, img2, inliers2, goodMatches, res);
-        Imgcodecs.imwrite("akaze_result.png", res);
+        Imgcodecs.imwrite("target/akaze_result.png", res);
 
         double inlierRatio = listOfInliers1.size() / (double) listOfMatched1.size();
         System.out.println("A-KAZE Matching Results");
@@ -153,9 +147,7 @@ class AKAZEMatch {
 
         System.exit(0);
     }
-}
 
-public class AKAZEMatchDemo {
     public static void main(String[] args) {
         // Load the native OpenCV library
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
